@@ -2,10 +2,14 @@
 <resources>
 
     <dimen name="layout_margin_left">10dp</dimen>
+    <dimen name="layout_margin_right">10dp</dimen>
+    <dimen name="layout_margin_top">15dp</dimen>
+    <dimen name="layout_margin">24dp</dimen>
     <dimen name="margin_text_view1">60dp</dimen>
+    <dimen name="margin_text_view2">20dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="movie_title_padding">10dp</dimen>
-    <dimen name="card_movie_radius">0dp</dimen>
+    <dimen name="card_movie_radius">5dp</dimen>
     <dimen name="movie_cover_height">300dp</dimen>
 
 </resources>

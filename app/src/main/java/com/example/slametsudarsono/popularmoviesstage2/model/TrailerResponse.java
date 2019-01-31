@@ -19,20 +19,7 @@ public class TrailerResponse {
         this.id_trailer = id_trailer;
     }
 
-    public List<Trailer> getResults() {
-        return results;
-    }
+    public List<Trailer> getResults() { return results; }
 
-    public List<Trailer> getMovies() {
-        return results;
-    }
-
-    public void setResults(List<Trailer> results) {
-        this.results = results;
-    }
-
-    public void setMovies(List<Trailer> results) {
-        this.results = results;
-    }
 
 }

@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    android:adjustViewBounds="true"
-    android:background="@color/viewBg">
+    android:adjustViewBounds="true">
 
     <android.support.v7.widget.CardView
         android:id="@+id/card_view2"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_gravity="center"
         android:layout_margin="@dimen/card_movie_radius"
         card_view:cardCornerRadius="0dp">
     
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/viewBg">
+        android:layout_height="match_parent">
 
         <ImageView
             android:id="@+id/thumbnail2"

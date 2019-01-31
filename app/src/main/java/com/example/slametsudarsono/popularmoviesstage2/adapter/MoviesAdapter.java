@@ -39,18 +39,25 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MyViewHold
     @Override
     public void onBindViewHolder(final MoviesAdapter.MyViewHolder viewHolder, int i){
 
+        String poster = "https://image.tmdb.org/t/p/w500" + movieList.get(i).getPosterPath();
+
         Picasso.with(mContext)
-                .load(movieList.get(i).getPosterPath())
+                .load(poster)
                 .placeholder(R.drawable.loading)
                 .into(viewHolder.thumbnail);
 
+    }
+
+    public void setMovies(List<Movie> movie) {
+        movieList = movie;
+        notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount(){return movieList.size();}
 
     public class MyViewHolder extends RecyclerView.ViewHolder{
-        //        public TextView title, userrating;
+
         public ImageView thumbnail;
 
         public MyViewHolder(View view){
@@ -69,6 +76,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MyViewHold
                         intent.putExtra("overview", movieList.get(pos).getOverview());
                         intent.putExtra("vote_average", Double.toString(movieList.get(pos).getVoteAverage()));
                         intent.putExtra("release_date", movieList.get(pos).getReleaseDate());
+                        intent.putExtra("id", movieList.get(pos).getId());
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         mContext.startActivity(intent);
                         Toast.makeText(v.getContext(), "You clicked " + clickedDataItem.getOriginalTitle(), Toast.LENGTH_SHORT).show();

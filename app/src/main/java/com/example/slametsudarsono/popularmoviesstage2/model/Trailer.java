@@ -57,9 +57,7 @@ public class Trailer {
         this.iso31661 = iso31661;
     }
 
-    public String getKey() {
-        return key;
-    }
+    public String getKey() { return key; }
 
     public void setKey(String key) {
         this.key = key;
