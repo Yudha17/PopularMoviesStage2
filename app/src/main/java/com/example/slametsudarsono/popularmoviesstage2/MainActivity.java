@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Parcelable;
 import android.preference.DialogPreference;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -63,6 +64,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private AppDatabase mDb;
     private AppCompatActivity activity = MainActivity.this;
     public static final String LOG_TAG = MoviesAdapter.class.getName();
+    private static String LIST_STATE = "list_state";
+    private Parcelable savedRecyclerLayoutState;
+    private static final String BUNDLE_RECYCLER_LAYOUT = "recycler_layout";
+    private ArrayList<Movie> moviesInstance = new ArrayList<>();
     int cacheSize = 10 * 1024 * 1024;
 
     @Override
@@ -70,23 +75,66 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if(!isNetworkAvailable(MainActivity.this)){
+        if (!isNetworkAvailable(MainActivity.this)) {
 
             buildDialog(MainActivity.this);
 
-        }
-        else{
+        } else {
             Toast.makeText(MainActivity.this, "Welcome", Toast.LENGTH_SHORT).show();
         }
 
+        if (savedInstanceState != null) {
+            moviesInstance = savedInstanceState.getParcelableArrayList(LIST_STATE);
+            savedRecyclerLayoutState = savedInstanceState.getParcelable(BUNDLE_RECYCLER_LAYOUT);
+            displayData();
+        } else {
             initViews();
+        }
+
 
     }
 
-    public Activity getActivity(){
+    private void displayData() {
+
+        rv = (RecyclerView) findViewById(R.id.recycler_view);
+        adapter = new MoviesAdapter(this, moviesInstance);
+        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            rv.setLayoutManager(new GridLayoutManager(this, 2));
+        } else {
+            rv.setLayoutManager(new GridLayoutManager(this, 4));
+        }
+        rv.setItemAnimator(new DefaultItemAnimator());
+        rv.setAdapter(adapter);
+        restoreLayoutManagerPosition();
+        adapter.notifyDataSetChanged();
+    }
+
+    private void restoreLayoutManagerPosition() {
+
+        if (savedRecyclerLayoutState != null) {
+            rv.getLayoutManager().onRestoreInstanceState(savedRecyclerLayoutState);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putParcelableArrayList(LIST_STATE, moviesInstance);
+        savedInstanceState.putParcelable(BUNDLE_RECYCLER_LAYOUT, rv.getLayoutManager().onSaveInstanceState());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        moviesInstance = savedInstanceState.getParcelableArrayList(LIST_STATE);
+        savedRecyclerLayoutState = savedInstanceState.getParcelable(BUNDLE_RECYCLER_LAYOUT);
+        super.onRestoreInstanceState(savedInstanceState);
+    }
+
+
+    public Activity getActivity() {
         Context context = this;
-        while(context instanceof ContextWrapper){
-            if(context instanceof Activity){
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
                 return (Activity) context;
             }
             context = ((ContextWrapper) context).getBaseContext();
@@ -94,23 +142,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return null;
     }
 
-    private void initViews(){
+    private void initViews() {
 
         rv = (RecyclerView) findViewById(R.id.recycler_view);
 
-        movieList = new ArrayList<>();
-        adapter = new MoviesAdapter(this, movieList);
 
-        if(getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
-            rv.setLayoutManager(new GridLayoutManager(this,2));
+        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            rv.setLayoutManager(new GridLayoutManager(this, 2));
         } else {
             rv.setLayoutManager(new GridLayoutManager(this, 4));
         }
 
         rv.setItemAnimator(new DefaultItemAnimator());
         rv.setAdapter(adapter);
-        adapter.notifyDataSetChanged();
-        favoriteDbHelper = new FavoriteDbHelper(activity);
+
 
 
         swipeContainer = (SwipeRefreshLayout) findViewById(R.id.main_content);
@@ -118,15 +163,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                initViews();
+
                 Toast.makeText(MainActivity.this, "Movies Refreshed", Toast.LENGTH_SHORT).show();
-                if(!isNetworkAvailable(MainActivity.this)){
+                if (!isNetworkAvailable(MainActivity.this)) {
 
                     buildDialog(MainActivity.this);
 
-                }
-                else{
-                    Toast.makeText(MainActivity.this, "Welcome", Toast.LENGTH_SHORT).show();
+                } else {
+
                 }
             }
         });
@@ -135,17 +179,18 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
 
-    private void checkSortOrder(){
+    private void checkSortOrder() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String sortOrder = preferences.getString(
                 this.getString(R.string.pref_sort_order_key),
                 this.getString(R.string.pref_most_popular)
         );
 
-        if(sortOrder.equals(this.getString(R.string.pref_most_popular))) {
+
+        if (sortOrder.equals(this.getString(R.string.pref_most_popular))) {
             Log.d(LOG_TAG, "Sorting by most popular");
             loadJSON1();
-        }else if (sortOrder.equals(this.getString(R.string.favorite))){
+        } else if (sortOrder.equals(this.getString(R.string.favorite))) {
             Log.d(LOG_TAG, "Sorting by favorite");
             initViews2();
         } else {
@@ -155,28 +200,28 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
 
-    private void loadJSON1(){
+    private void loadJSON1() {
 
-        try{
-            if(BuildConfig.THE_MOVIE_DB_API_TOKEN.isEmpty()){
-                Toast.makeText(getApplicationContext(), "Please obtain API key firstly from themoviedb.org", Toast.LENGTH_SHORT).show();
+        try {
+            if (BuildConfig.THE_MOVIE_DB_API_TOKEN.isEmpty()) {
+                Toast.makeText(getApplicationContext(), R.string.please_obtain, Toast.LENGTH_SHORT).show();
                 pd.dismiss();
                 return;
             }
 
-            Client client = new Client();
-            Service apiService  = client.getClient().create(Service.class);
+            Client Client = new Client();
+            Service apiService = Client.getClient().create(Service.class);
             Call<MoviesResponse> call = apiService.getPopularMovies(BuildConfig.THE_MOVIE_DB_API_TOKEN);
             call.enqueue(new Callback<MoviesResponse>() {
                 @Override
                 public void onResponse(Call<MoviesResponse> call, Response<MoviesResponse> response) {
 
                     List<Movie> movies = response.body().getResults();
+                    moviesInstance.addAll(movies);
                     rv.setAdapter(new MoviesAdapter(getApplicationContext(), movies));
                     rv.smoothScrollToPosition(0);
-                    if(swipeContainer.isRefreshing()){
+                    if (swipeContainer.isRefreshing()) {
                         swipeContainer.setRefreshing(false);
-
                     }
 
                 }
@@ -188,20 +233,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 }
             });
-        }catch (Exception e){
+        } catch (Exception e) {
             Log.d("Error", e.getMessage());
             Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void initViews2(){
+    private void initViews2() {
 
         rv = (RecyclerView) findViewById(R.id.recycler_view);
 
         movieList = new ArrayList<>();
         adapter = new MoviesAdapter(this, movieList);
-
-        if(getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
+        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             rv.setLayoutManager(new GridLayoutManager(this, 2));
         } else {
             rv.setLayoutManager(new GridLayoutManager(this, 4));
@@ -213,6 +257,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         favoriteDbHelper = new FavoriteDbHelper(activity);
 
         getAllFavorite();
+        if (swipeContainer.isRefreshing()) {
+            swipeContainer.setRefreshing(false);
+        }
     }
 
 
@@ -223,7 +270,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             @Override
             public void onChanged(@Nullable List<FavoriteEntry> imageEntries) {
                 List<Movie> movies = new ArrayList<>();
-                for (FavoriteEntry entry : imageEntries){
+                for (FavoriteEntry entry : imageEntries) {
                     Movie movie = new Movie();
                     movie.setId(entry.getMovieid());
                     movie.setOverview(entry.getOverview());
@@ -241,28 +288,28 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
 
-    private void loadJSON2(){
+    private void loadJSON2() {
 
-        try{
-            if(BuildConfig.THE_MOVIE_DB_API_TOKEN.isEmpty()){
-                Toast.makeText(getApplicationContext(), "Please obtain API key firstly from themoviedb.org", Toast.LENGTH_SHORT).show();
+        try {
+            if (BuildConfig.THE_MOVIE_DB_API_TOKEN.isEmpty()) {
+                Toast.makeText(getApplicationContext(), R.string.please_obtain, Toast.LENGTH_SHORT).show();
                 pd.dismiss();
                 return;
             }
 
 
             Client client = new Client();
-            Service apiService  = client.getClient().create(Service.class);
+            Service apiService = client.getClient().create(Service.class);
             Call<MoviesResponse> call = apiService.getTopRatedMovies(BuildConfig.THE_MOVIE_DB_API_TOKEN);
             call.enqueue(new Callback<MoviesResponse>() {
                 @Override
                 public void onResponse(Call<MoviesResponse> call, Response<MoviesResponse> response) {
                     List<Movie> movies = response.body().getResults();
+                    moviesInstance.addAll(movies);
                     rv.setAdapter(new MoviesAdapter(getApplicationContext(), movies));
                     rv.smoothScrollToPosition(0);
-                    if(swipeContainer.isRefreshing()){
+                    if (swipeContainer.isRefreshing()) {
                         swipeContainer.setRefreshing(false);
-
                     }
 
                 }
@@ -274,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
                 }
             });
-        }catch (Exception e){
+        } catch (Exception e) {
             Log.d("Error", e.getMessage());
             Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
         }
@@ -289,10 +336,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
 
 
-
     }
 
-    private AlertDialog.Builder buildDialog(Context c){
+    private AlertDialog.Builder buildDialog(Context c) {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle("No Internet Connection");
@@ -303,6 +349,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             public void onClick(DialogInterface dialog, int which) {
 
                 finish();
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.setClassName("com.android.phone", "com.android.phone.NetworkSetting");
+                startActivity(intent);
             }
         }).show();
 
@@ -310,16 +359,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
 
-
     @Override
-    public boolean onCreateOptionsMenu(Menu menu){
+    public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item){
-        switch (item.getItemId()){
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
             case R.id.menu_settings:
                 Intent intent = new Intent(this, SettingsActivity.class);
                 startActivity(intent);
@@ -330,21 +378,10 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s){
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         Log.d(LOG_TAG, "Preference updated");
         checkSortOrder();
     }
 
-
-
-    @Override
-    public void onResume(){
-        super.onResume();
-        if(movieList.isEmpty()){
-            checkSortOrder();
-        }else{
-            checkSortOrder();
-        }
-    }
 
 }

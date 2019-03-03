@@ -10,5 +10,10 @@
     <string name="favorite">Favorite Movies</string>
     <string name="review">Review</string>
     <string name="share">Share</string>
+    <string name="pref_summary">Choose an order to sort.</string>
+    <string name="pref_sortBy_key" translatable="false">sort</string>
+    <string name="pref_sortBy_title">Sort By:</string>
+    <string name="please_obtain">Please obtain API key firstly from themoviedb.org</string>
+
 
 </resources>
